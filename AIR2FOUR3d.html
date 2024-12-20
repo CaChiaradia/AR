@@ -1,46 +1,57 @@
-<html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-  </head>
-  <body>
-    <a-scene
-      mindar-image="imageTargetSrc: ./targets.mind; showStats: true;"
-      color-space="sRGB"
-      renderer="colorManagement: true, physicallyCorrectLights"
-      vr-mode-ui="enabled: false"
-      device-orientation-permission-ui="enabled: false"
-    >
-      <a-assets>
-        <img
-          id="card"
-          src="https://cachiaradia.github.io/AR/logomemo-air2four.mind"
-        />
-        <a-asset-item
-          id="avatarModel"
-          src="https://cachiaradia.github.io/AR/air2four-v4.gltf"
-        ></a-asset-item>
-      </a-assets>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebXR AR Example</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@webxr-input-profiles/motion-controllers@2.0.0/dist/index.js"></script>
+</head>
+<body style="margin: 0; overflow: hidden;">
+  <script>
+    let scene, camera, renderer, controller;
+    let model;
 
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+    // Inicializando a cena Three.js
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
 
-      <a-entity mindar-image-target="targetIndex: 0">
-        <a-plane
-          src="#card"
-          position="0 0 0"
-          height="0.552"
-          width="1"
-          rotation="0 0 0"
-        ></a-plane>
-        <a-gltf-model
-          rotation="0 0 0 "
-          position="0 0 0.1"
-          scale="0.005 0.005 0.005"
-          src="#avatarModel"
-          animation="property: position; to: 0 0.1 0.1; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"
-        ></a-gltf-model>
-      </a-entity>
-    </a-scene>
-  </body>
+    // Carregar o modelo 3D
+    const loader = new THREE.GLTFLoader();
+    loader.load('https://cachiaradia.github.io/AR/air2four test-2.gltf', function(gltf) {
+      model = gltf.scene;
+      model.scale.set(0.5, 0.5, 0.5);
+      scene.add(model);
+    });
+
+    // Configurar o AR
+    function onXRFrame(t, frame) {
+      renderer.render(scene, camera);
+      frame.requestAnimationFrame(onXRFrame);
+    }
+
+    // Configuração do WebXR
+    navigator.xr.requestSession('immersive-ar', {
+      requiredFeatures: ['hit-test']
+    }).then(function(session) {
+      renderer.xr.enabled = true;
+      session.addEventListener('select', function() {
+        console.log('AR model selected');
+      });
+      session.requestReferenceSpace('local').then(function(referenceSpace) {
+        const hitTestSource = session.requestHitTestSource({ space: referenceSpace });
+        session.requestAnimationFrame(onXRFrame);
+      });
+    });
+
+    window.addEventListener('resize', function() {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    });
+  </script>
+</body>
 </html>
